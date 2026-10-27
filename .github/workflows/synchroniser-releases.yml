@@ -1,0 +1,93 @@
+name: "Synchroniser les Releases KALONÉO validées"
+on:
+  push:
+    branches: [main]
+    paths:
+      - ".github/workflows/synchroniser-releases.yml"
+  schedule:
+    - cron: "*/15 * * * *"
+  workflow_dispatch:
+permissions:
+  contents: write
+concurrency:
+  group: kaloneo-maj-mirror
+  cancel-in-progress: false
+jobs:
+  copier-release-validee:
+    runs-on: windows-latest
+    timeout-minutes: 30
+    steps:
+      - name: Télécharger et vérifier le dernier Setup officiel
+        id: source
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $sourceReleases = @(gh api 'repos/mini56/Kaloneo/releases?per_page=30' | ConvertFrom-Json)
+          if($LASTEXITCODE -ne 0){throw 'Lecture du dépôt de compilation impossible'}
+          $candidate = @($sourceReleases | Where-Object {
+            $_.draft -eq $false -and $_.tag_name -match '^kaloneo-[0-9]+\.[0-9]+\.[0-9]+$'
+          } | Sort-Object -Property @{Expression={[version]($_.tag_name -replace '^kaloneo-','')}} -Descending | Select-Object -First 1)
+          if($candidate.Count -eq 0){Write-Host 'Aucune Release validée à synchroniser';exit 0}
+          $release = $candidate[0]
+          $tag = [string]$release.tag_name
+          $version = $tag.Substring(8)
+          $exeName = "KALONEO-Setup-$version.exe"
+          $shaName = "$exeName.sha256"
+          $sourceExe = @($release.assets | Where-Object {$_.name -eq $exeName}) | Select-Object -First 1
+          $sourceSha = @($release.assets | Where-Object {$_.name -eq $shaName}) | Select-Object -First 1
+          if(-not $sourceExe -or -not $sourceSha){throw "Fichiers de la Release $tag manquants"}
+          if($sourceExe.digest -notmatch '^sha256:[0-9a-fA-F]{64}$'){throw 'Empreinte officielle GitHub absente'}
+          gh release view $tag --repo mini56/Kaloneo-MAJ --json tagName *> $null
+          if($LASTEXITCODE -eq 0){
+            Write-Host "Release $tag déjà publiée ici : aucune modification"
+            exit 0
+          }
+          New-Item -ItemType Directory -Path 'dist' -Force | Out-Null
+          gh release download $tag --repo mini56/Kaloneo --pattern $exeName --dir dist --clobber
+          if($LASTEXITCODE -ne 0){throw 'Téléchargement du Setup source impossible'}
+          gh release download $tag --repo mini56/Kaloneo --pattern $shaName --dir dist --clobber
+          if($LASTEXITCODE -ne 0){throw 'Téléchargement du SHA256 impossible'}
+          $file = Get-Item (Join-Path 'dist' $exeName) -ErrorAction Stop
+          if($file.Length -lt 100MB){throw 'Setup incomplet'}
+          $actual = (Get-FileHash -Path $file.FullName -Algorithm SHA256).Hash.ToUpperInvariant()
+          $fromGitHub = ([string]$sourceExe.digest).Substring(7).ToUpperInvariant()
+          $fromFile = [regex]::Match((Get-Content (Join-Path 'dist' $shaName) -Raw),'^[A-Fa-f0-9]{64}').Value.ToUpperInvariant()
+          if(-not $fromFile -or $actual -ne $fromGitHub -or $actual -ne $fromFile){
+            throw "Empreinte SHA256 incorrecte pour $tag : copie interdite"
+          }
+          Add-Content $env:GITHUB_OUTPUT "tag=$tag"
+          Add-Content $env:GITHUB_OUTPUT "exe=$exeName"
+          Add-Content $env:GITHUB_OUTPUT "sha=$shaName"
+          Add-Content $env:GITHUB_OUTPUT "checksum=$actual"
+          Write-Host "KALONEO_MAJ_SOURCE_VERIFIED=$tag SHA256=$actual"
+      - name: Publier exactement le binaire contrôlé dans Kaloneo-MAJ
+        if: steps.source.outputs.tag != ''
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_TAG: ${{ steps.source.outputs.tag }}
+          RELEASE_EXE: ${{ steps.source.outputs.exe }}
+          RELEASE_SHA: ${{ steps.source.outputs.sha }}
+          RELEASE_CHECKSUM: ${{ steps.source.outputs.checksum }}
+        run: |
+          $ErrorActionPreference = 'Stop'
+          gh release view $env:RELEASE_TAG --repo mini56/Kaloneo-MAJ --json tagName *> $null
+          if($LASTEXITCODE -eq 0){throw "La Release $env:RELEASE_TAG a été créée entre les deux contrôles"}
+          $notes = @"
+          Copie conforme et vérifiée de la Release $env:RELEASE_TAG compilée dans mini56/Kaloneo.
+
+          SHA256 de l'installateur : $env:RELEASE_CHECKSUM
+
+          Source : https://github.com/mini56/Kaloneo/releases/tag/$env:RELEASE_TAG
+          Audit et provenance : consulter la Release source.
+          KALONÉO reste utilisable hors connexion. Aucun fichier candidat n'est publié ici.
+          "@
+          gh release create $env:RELEASE_TAG ("dist/"+$env:RELEASE_EXE) ("dist/"+$env:RELEASE_SHA) --repo mini56/Kaloneo-MAJ --target main --title "KALONÉO $($env:RELEASE_TAG.Substring(8)) — Mise à jour Windows" --notes $notes --prerelease
+          if($LASTEXITCODE -ne 0){throw 'Publication du miroir KALONÉO impossible'}
+          $published = gh api "repos/mini56/Kaloneo-MAJ/releases/tags/$env:RELEASE_TAG" | ConvertFrom-Json
+          if($LASTEXITCODE -ne 0){throw 'Release miroir illisible'}
+          $asset=@($published.assets | Where-Object {$_.name -eq $env:RELEASE_EXE}) | Select-Object -First 1
+          if(-not $asset -or $asset.digest -ne "sha256:$($env:RELEASE_CHECKSUM.ToLowerInvariant())"){throw 'Empreinte du fichier miroir non confirmée'}
+          Write-Host "KALONEO_MAJ_MIRROR=SUCCESS $env:RELEASE_TAG"
