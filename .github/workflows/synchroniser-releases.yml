@@ -101,3 +101,5 @@ jobs:
 # Synchronisation confirmée de la Release 1.00.194 (page Terminer et lancement facultatif).
 
 # Synchronisation de KALONÉO 1.00.195 : téléchargement SHA256 en zone dédiée et installation confirmée.
+
+# Synchronisation de KALONÉO 1.00.196 : barre verte de progression réelle, octets reçus et contrôle SHA256.
