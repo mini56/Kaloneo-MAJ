@@ -91,3 +91,5 @@ jobs:
           $asset=@($published.assets | Where-Object {$_.name -eq $env:RELEASE_EXE}) | Select-Object -First 1
           if(-not $asset -or $asset.digest -ne "sha256:$($env:RELEASE_CHECKSUM.ToLowerInvariant())"){throw 'Empreinte du fichier miroir non confirmée'}
           Write-Host "KALONEO_MAJ_MIRROR=SUCCESS $env:RELEASE_TAG"
+
+# Synchronisation manuelle demandée pour la Release KALONÉO 1.00.191 validée.
