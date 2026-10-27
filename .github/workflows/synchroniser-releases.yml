@@ -93,3 +93,5 @@ jobs:
           Write-Host "KALONEO_MAJ_MIRROR=SUCCESS $env:RELEASE_TAG"
 
 # Synchronisation manuelle demandée pour la Release KALONÉO 1.00.191 validée.
+
+# Publication demandée le 27 octobre 2026 : miroir exact et SHA256 de KALONÉO 1.00.192.
