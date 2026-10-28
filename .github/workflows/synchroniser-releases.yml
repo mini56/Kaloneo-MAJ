@@ -137,3 +137,5 @@ jobs:
 # Sécurité : la copie n’est publiée que si les deux empreintes SHA256 concordent.
 
 # 2026-10-28 : synchronisation explicite demandee pour 1.00.199, validation SHA256 et telechargement du Setup sur depot MAJ.
+
+# 2026-10-28 : synchroniser explicitement 1.00.202 apres validation des corrections export Candidat Test. Copie EXE+SHA256 uniquement avec verification des empreintes et du telechargement miroir.
