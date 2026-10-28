@@ -1,6 +1,6 @@
 # KALONÉO — mises à jour Windows
 
-Dépôt public de distribution des mises à jour **KALONÉO**.
+Dépôt de distribution des mises à jour **KALONÉO**.
 
 Les exécutables sont compilés et validés, puis copiés ici par GitHub Actions, **sans nouvelle compilation**.
 
