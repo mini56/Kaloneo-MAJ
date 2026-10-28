@@ -133,3 +133,5 @@ jobs:
 
 # 2026-10-28 : resynchronisation explicite de 1.00.198 après absence de déclenchement planifié.
 # Sécurité : la copie n’est publiée que si les deux empreintes SHA256 concordent.
+
+# 2026-10-28 : synchronisation explicite demandee pour 1.00.199, validation SHA256 et telechargement du Setup sur depot MAJ.
