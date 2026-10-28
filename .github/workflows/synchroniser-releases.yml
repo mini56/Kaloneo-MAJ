@@ -37,7 +37,9 @@ jobs:
           $shaName = "$exeName.sha256"
           $sourceExe = @($release.assets | Where-Object {$_.name -eq $exeName}) | Select-Object -First 1
           $sourceSha = @($release.assets | Where-Object {$_.name -eq $shaName}) | Select-Object -First 1
-          if(-not $sourceExe -or -not $sourceSha){throw "Fichiers de la Release $tag manquants"}
+          if(-not $sourceExe -or -not $sourceSha -or @($release.assets).Count -ne 2){
+             throw "La Release source $tag doit contenir exactement l'EXE et son SHA256"
+           }
           if($sourceExe.digest -notmatch '^sha256:[0-9a-fA-F]{64}$'){throw 'Empreinte officielle GitHub absente'}
           # Une Release existante n'est pas une preuve de distribution :
           # les DEUX fichiers et le SHA256 doivent encore etre presents.
@@ -46,7 +48,7 @@ jobs:
             $existing = $existingRaw | ConvertFrom-Json
             $existingExe = @($existing.assets | Where-Object {$_.name -eq $exeName}) | Select-Object -First 1
             $existingSha = @($existing.assets | Where-Object {$_.name -eq $shaName}) | Select-Object -First 1
-            if(-not $existingExe -or -not $existingSha -or
+            if(-not $existingExe -or -not $existingSha -or @($existing.assets).Count -ne 2 -or
                $existingExe.digest -ne $sourceExe.digest -or
                $existingSha.digest -ne $sourceSha.digest -or
                $existingExe.size -lt 100MB){
@@ -91,8 +93,8 @@ jobs:
 
           SHA256 de l'installateur : $env:RELEASE_CHECKSUM
 
-          Source : https://github.com/mini56/Kaloneo/releases/tag/$env:RELEASE_TAG
-          Audit et provenance : consulter la Release source.
+          Fichiers distribues : uniquement l'installateur Windows EXE et son SHA256.
+          Les archives « Source code (zip/tar.gz) » sont ajoutees par GitHub et contiennent uniquement le depot MAJ minimal.
           KALONÉO reste utilisable hors connexion. Aucun fichier candidat n'est publié ici.
           "@
           gh release create $env:RELEASE_TAG ("dist/"+$env:RELEASE_EXE) ("dist/"+$env:RELEASE_SHA) --repo mini56/Kaloneo-MAJ --target main --title "KALONÉO $($env:RELEASE_TAG.Substring(8)) — Mise à jour Windows" --notes $notes --prerelease
@@ -101,7 +103,7 @@ jobs:
           if($LASTEXITCODE -ne 0){throw 'Release miroir illisible'}
           $asset=@($published.assets | Where-Object {$_.name -eq $env:RELEASE_EXE}) | Select-Object -First 1
           $shaAsset=@($published.assets | Where-Object {$_.name -eq $env:RELEASE_SHA}) | Select-Object -First 1
-          if(-not $asset -or -not $shaAsset -or
+          if(-not $asset -or -not $shaAsset -or @($published.assets).Count -ne 2 -or
              $asset.size -lt 100MB -or
              $asset.digest -ne "sha256:$($env:RELEASE_CHECKSUM.ToLowerInvariant())"){
             throw 'Release miroir incomplete : Setup ou SHA256 absent, empreinte incorrecte'
