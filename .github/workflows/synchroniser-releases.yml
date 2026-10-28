@@ -5,7 +5,7 @@ on:
     paths:
       - ".github/workflows/synchroniser-releases.yml"
   schedule:
-    - cron: "*/15 * * * *"
+    - cron: "*/5 * * * *"
   workflow_dispatch:
 permissions:
   contents: write
@@ -105,3 +105,6 @@ jobs:
 # Synchronisation de KALONÉO 1.00.196 : barre verte de progression réelle, octets reçus et contrôle SHA256.
 
 # Synchronisation de KALONÉO 1.00.197 : correctif Builder R197, menus Type et Zone après insertion du bloc 10, Release Windows validée.
+
+# 2026-10-28 : resynchronisation explicite de 1.00.198 après absence de déclenchement planifié.
+# Sécurité : la copie n’est publiée que si les deux empreintes SHA256 concordent.
