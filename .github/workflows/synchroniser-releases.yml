@@ -39,9 +39,20 @@ jobs:
           $sourceSha = @($release.assets | Where-Object {$_.name -eq $shaName}) | Select-Object -First 1
           if(-not $sourceExe -or -not $sourceSha){throw "Fichiers de la Release $tag manquants"}
           if($sourceExe.digest -notmatch '^sha256:[0-9a-fA-F]{64}$'){throw 'Empreinte officielle GitHub absente'}
-          gh release view $tag --repo mini56/Kaloneo-MAJ --json tagName *> $null
+          # Une Release existante n'est pas une preuve de distribution :
+          # les DEUX fichiers et le SHA256 doivent encore etre presents.
+          $existingRaw = gh api "repos/mini56/Kaloneo-MAJ/releases/tags/$tag" 2>$null
           if($LASTEXITCODE -eq 0){
-            Write-Host "Release $tag déjà publiée ici : aucune modification"
+            $existing = $existingRaw | ConvertFrom-Json
+            $existingExe = @($existing.assets | Where-Object {$_.name -eq $exeName}) | Select-Object -First 1
+            $existingSha = @($existing.assets | Where-Object {$_.name -eq $shaName}) | Select-Object -First 1
+            if(-not $existingExe -or -not $existingSha -or
+               $existingExe.digest -ne $sourceExe.digest -or
+               $existingSha.digest -ne $sourceSha.digest -or
+               $existingExe.size -lt 100MB){
+              throw "Release miroir $tag INCOMPLETE ou SHA256 different : verification bloquee"
+            }
+            Write-Host "KALONEO_MAJ_ALREADY_VERIFIED=$tag ; EXE et SHA256 conformes"
             exit 0
           }
           New-Item -ItemType Directory -Path 'dist' -Force | Out-Null
@@ -89,8 +100,22 @@ jobs:
           $published = gh api "repos/mini56/Kaloneo-MAJ/releases/tags/$env:RELEASE_TAG" | ConvertFrom-Json
           if($LASTEXITCODE -ne 0){throw 'Release miroir illisible'}
           $asset=@($published.assets | Where-Object {$_.name -eq $env:RELEASE_EXE}) | Select-Object -First 1
-          if(-not $asset -or $asset.digest -ne "sha256:$($env:RELEASE_CHECKSUM.ToLowerInvariant())"){throw 'Empreinte du fichier miroir non confirmée'}
-          Write-Host "KALONEO_MAJ_MIRROR=SUCCESS $env:RELEASE_TAG"
+          $shaAsset=@($published.assets | Where-Object {$_.name -eq $env:RELEASE_SHA}) | Select-Object -First 1
+          if(-not $asset -or -not $shaAsset -or
+             $asset.size -lt 100MB -or
+             $asset.digest -ne "sha256:$($env:RELEASE_CHECKSUM.ToLowerInvariant())"){
+            throw 'Release miroir incomplete : Setup ou SHA256 absent, empreinte incorrecte'
+          }
+          # Telecharger par la meme page GitHub Releases que le programme.
+          New-Item -ItemType Directory -Path 'verification-miroir' -Force | Out-Null
+          gh release download $env:RELEASE_TAG --repo mini56/Kaloneo-MAJ --pattern $env:RELEASE_EXE --dir verification-miroir --clobber
+          if($LASTEXITCODE -ne 0){throw 'Le Setup miroir est inaccessible au telechargement'}
+          $downloaded=Get-Item (Join-Path verification-miroir $env:RELEASE_EXE) -ErrorAction Stop
+          $downloadHash=(Get-FileHash $downloaded.FullName -Algorithm SHA256).Hash.ToUpperInvariant()
+          if($downloaded.Length -ne $asset.size -or $downloadHash -ne $env:RELEASE_CHECKSUM){
+            throw 'Le Setup telecharge depuis Kaloneo-MAJ est different de la source'
+          }
+          Write-Host "KALONEO_MAJ_MIRROR=SUCCESS $env:RELEASE_TAG ; fichier telecharge et controle"
 
 # Synchronisation manuelle demandée pour la Release KALONÉO 1.00.191 validée.
 
