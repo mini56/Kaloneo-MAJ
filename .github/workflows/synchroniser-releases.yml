@@ -141,3 +141,5 @@ jobs:
 # 2026-10-28 : synchroniser explicitement 1.00.202 apres validation des corrections export Candidat Test. Copie EXE+SHA256 uniquement avec verification des empreintes et du telechargement miroir.
 
 # 2026-10-28 : synchroniser KALONEO 1.00.203 avec correction du focus Windows apres confirmation de suppression d'un bloc Builder. Copier seulement EXE et SHA256 verifies, sans fichier candidat ni source applicatif.
+
+# 2026-10-28 : synchroniser immédiatement la Release officielle KALONÉO 1.00.204 (V1 Bon de transport et trois médias existants) ; contrôle SHA256 sans changement des binaires.
