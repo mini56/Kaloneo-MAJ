@@ -1,0 +1,42 @@
+name: Bibliothèque images - miniatures et catalogue
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'bibliotheque-images/originaux/**'
+      - 'bibliotheque-images/generer_catalogue.py'
+      - 'bibliotheque-images/catalogue.json'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: catalogue-images
+  cancel-in-progress: false
+
+jobs:
+  generer:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: true
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Installer Pillow
+        run: python -m pip install 'Pillow>=11,<13'
+      - name: Générer les miniatures et le catalogue
+        run: python bibliotheque-images/generer_catalogue.py
+      - name: Publier les changements sans toucher aux Releases
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add bibliotheque-images/catalogue.json bibliotheque-images/miniatures
+          if ! git diff --cached --quiet; then
+            git commit -m "images: actualiser automatiquement miniatures et catalogue"
+            git push
+          fi
