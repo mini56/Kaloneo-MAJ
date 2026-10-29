@@ -1,36 +1,26 @@
-# Bibliothèque d’images en ligne KALONÉO
+# Bibliothèque d’images KALONÉO — fonctionnement automatique
 
-Ce dossier est **indépendant des mises à jour du logiciel** et ne contient aucune donnée candidat.
+## Pour ajouter des images
 
-## Organisation
+1. Ouvrir le dossier [originaux](./originaux) sur GitHub.
+2. Cliquer sur **Add file → Upload files** et déposer des images PNG, JPG, WebP, GIF ou BMP. On peut envoyer plusieurs images à la fois.
+3. Valider le dépôt sur la branche `main`. **GitHub Actions génère automatiquement les miniatures et le catalogue.**
 
-- `catalogue.json` : catalogue public consommable par le Builder KALONÉO.
-- `miniatures/` : prévisualisations légères affichées dans le logiciel (WebP conseillé, largeur 240 px).
-- `originaux/` : images originales, téléchargées **uniquement à la demande**.
+Pour classer les images par thème, les placer dans un sous-dossier de `originaux/` nommé `horloges`, `metiers`, `outils`, `transports`, `calcul`, `puzzles`, `documents` ou `divers`. Les images déposées directement dans `originaux/` seront classées dans `divers`.
 
-## Ajouter une image
+**Ne pas** modifier `catalogue.json` ni créer les miniatures manuellement. La suppression d'un original provoque la suppression de sa miniature et de son entrée du catalogue lors du prochain traitement.
 
-1. Déposer l'image originale dans `originaux/` et sa miniature dans `miniatures/`.
-2. Ajouter une entrée dans le tableau `images` de `catalogue.json`. Exemple :
+Si aucun fichier n'apparaît après dépôt, vérifier l'onglet **Actions** du dépôt et les autorisations de GitHub Actions en écriture (Settings → Actions → General → Workflow permissions). Un lancement manuel est aussi possible via **Actions → Bibliothèque images - miniatures et catalogue → Run workflow**.
 
-```json
-{
-  "id": "horloge-01h15",
-  "titre": "Horloge 1 h 15",
-  "categorie": "horloges",
-  "miniature": "miniatures/horloge-01h15.webp",
-  "fichier": "originaux/horloge-01h15.png",
-  "sha256": "<empreinte SHA-256 réelle de l'original>",
-  "taille_octets": 123456
-}
-```
+## Technique
 
-Les chemins sont relatifs au répertoire `bibliotheque-images/`. Les identifiants doivent être uniques. L'empreinte et la taille doivent être celles du vrai fichier, pas des valeurs d'exemple. Utiliser uniquement des images dont la diffusion est autorisée.
+- Miniatures WebP 240 × 240 px maximum (proportions conservées), créées par Pillow.
+- Catalogue `catalogue.json` enrichi automatiquement (titre, catégorie, chemin de l'original, chemin de la miniature, SHA-256, taille).
+- Formats originaux autorisés : PNG, JPEG, WebP, GIF, BMP ; taille maximale de 30 Mio chacun.
+- Identifiants fondés sur le dossier de catégorie et le nom du fichier ; éviter les noms identiques dans une catégorie.
+- Les fichiers sont publics sur GitHub : n'y déposer que des images redistribuables, sans données personnelles.
+- Le workflow ne modifie **ni les Releases ni les installateurs**. Il ne relie pas encore le programme KALONÉO au catalogue.
 
-## Intégration future dans le Builder
+**Catalogue public :** https://raw.githubusercontent.com/mini56/Kaloneo-MAJ/main/bibliotheque-images/catalogue.json
 
-Le Builder devra lire `catalogue.json`, afficher **seulement les miniatures** pour la consultation, permettre une sélection multiple puis télécharger les originaux choisis. Avant import, vérifier les chemins, la taille, l'empreinte SHA-256 et les doublons. Protéger les téléchargements contre les chemins relatifs malveillants, les fichiers trop gros et les formats non autorisés. Les images locales restent utilisables hors ligne.
-
-**Adresse du catalogue :** `https://raw.githubusercontent.com/mini56/Kaloneo-MAJ/main/bibliotheque-images/catalogue.json`
-
-**État actuel :** structure préparée ; catalogue vide tant qu'aucune image validée n'a été publiée. Ce dossier ne modifie pas le programme KALONÉO et ne déclenche aucun Setup.
+**Important :** la bibliothèque reste vide jusqu'à l'ajout des premières images. Le Builder devra ultérieurement télécharger les miniatures pour prévisualisation et les originaux sélectionnés à la demande.
