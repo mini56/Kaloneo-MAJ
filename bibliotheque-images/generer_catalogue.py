@@ -74,7 +74,10 @@ def main():
         category = classify(rel, known)
         # Path hash prevents clashes between identically named files in different folders.
         ident = f"{category}-{slug(p.stem)}-{hashlib.sha256(rel.as_posix().encode()).hexdigest()[:10]}"
-        thumb = THUMBS / f"{ident}.webp"
+        # Nom de miniature court, sans repeter la categorie deja presente dans le fichier.
+        # Le suffixe court empeche les collisions entre dossiers.
+        thumb_name = f"{slug(p.stem)}-{hashlib.sha256(rel.as_posix().encode()).hexdigest()[:8]}.webp"
+        thumb = THUMBS / thumb_name
         try:
             with Image.open(p) as im:
                 if im.format not in ("PNG", "JPEG", "WEBP", "GIF", "BMP"):
