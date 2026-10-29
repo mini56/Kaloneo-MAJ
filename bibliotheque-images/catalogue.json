@@ -1,0 +1,40 @@
+{
+  "schema_version": 1,
+  "catalogue_version": "1.0.0",
+  "titre": "Bibliothèque d’images KALONÉO",
+  "categories": [
+    {
+      "id": "horloges",
+      "nom": "Horloges"
+    },
+    {
+      "id": "metiers",
+      "nom": "Métiers"
+    },
+    {
+      "id": "outils",
+      "nom": "Outils et atelier"
+    },
+    {
+      "id": "transports",
+      "nom": "Transports"
+    },
+    {
+      "id": "calcul",
+      "nom": "Calcul et nombres"
+    },
+    {
+      "id": "puzzles",
+      "nom": "Puzzles"
+    },
+    {
+      "id": "documents",
+      "nom": "Documents et bureautique"
+    },
+    {
+      "id": "divers",
+      "nom": "Divers"
+    }
+  ],
+  "images": []
+}
