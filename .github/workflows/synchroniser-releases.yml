@@ -147,3 +147,5 @@ jobs:
 # 2026-10-28 : synchronisation vérifiée KALONEO 1.00.205, correction R205 du focus Builder avec dialogue interne (audit Windows 40733962964). Publier seulement EXE et .sha256 authentifiés, ne transférer ni code ni données candidats.
 
 # 2026-10-29 : synchronisation explicite KALONÉO 1.00.206 après audit Windows, test des 48 horloges et publication du Setup officiel ; vérifier EXE, SHA256 et téléchargement du miroir.
+
+# 2026-10-29 : synchronisation explicite KALONÉO 1.00.207 ; Setup Windows tests verts, absence de nouveaux dossiers SEB EvalPro, bilan et candidats préservés. Publier EXE et SHA256 conformes, puis vérifier le téléchargement.
