@@ -149,3 +149,6 @@ jobs:
 # 2026-10-29 : synchronisation explicite KALONÉO 1.00.206 après audit Windows, test des 48 horloges et publication du Setup officiel ; vérifier EXE, SHA256 et téléchargement du miroir.
 
 # 2026-10-29 : synchronisation explicite KALONÉO 1.00.207 ; Setup Windows tests verts, absence de nouveaux dossiers SEB EvalPro, bilan et candidats préservés. Publier EXE et SHA256 conformes, puis vérifier le téléchargement.
+
+# 2026-10-29 : verification manuelle de la synchronisation de la Release 1.00.208
+# Le workflow ne modifie pas les tests ni les binaires : SHA256 obligatoire avant copie.
