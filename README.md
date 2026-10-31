@@ -28,3 +28,27 @@ candidats reste utilisable hors connexion.
 
 **Confidentialité :** dépôt public, sans dossiers candidats, données
 personnelles, mot de passe ni archives privées.
+
+## Compilation privée et synchronisation des Releases
+
+Le dépôt de développement `mini56/Kaloneo` peut rester privé. Dans ce cas,
+le jeton GitHub automatique du **présent dépôt public** ne peut pas lire
+directement les Releases du dépôt privé.
+
+Pour autoriser la copie automatique des futures versions, le propriétaire
+du dépôt `Kaloneo-MAJ` doit créer dans **Settings → Secrets and variables
+→ Actions** un secret de dépôt nommé `KALONEO_SOURCE_READ_TOKEN`.
+Sa valeur doit être un **jeton GitHub fine-grained**, autorisé uniquement
+sur `mini56/Kaloneo`, avec le droit **Contents: Read-only** (et Metadata:
+Read-only, accordé automatiquement). Ne jamais placer ce jeton dans le code,
+un fichier README, une Release ou un journal.
+
+Le workflow de copie utilise ce secret lorsqu'il est disponible ; sinon il
+utilise le jeton standard pour les Releases publiques. Les contrôles du
+SHA256, des deux fichiers officiels et de la possibilité de télécharger
+le Setup restent obligatoires dans les deux cas.
+
+La compilation Windows se déroule uniquement sur le dépôt principal.
+Un échec de synchronisation ne retire pas les versions déjà publiées,
+mais les nouveaux Setup restent indisponibles pour les mises à jour
+intégrées jusqu'à la résolution du problème.
