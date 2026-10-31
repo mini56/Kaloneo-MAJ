@@ -21,7 +21,10 @@ jobs:
         id: source
         shell: pwsh
         env:
-          GH_TOKEN: ${{ github.token }}
+          # Quand Kaloneo est privé, fournir sur ce dépôt un jeton finement
+          # limité à la lecture du dépôt source (Contents: read).
+          # En public, le jeton standard GitHub reste suffisant.
+          GH_TOKEN: ${{ secrets.KALONEO_SOURCE_READ_TOKEN || github.token }}
         run: |
           $ErrorActionPreference = 'Stop'
           $sourceReleases = @(gh api 'repos/mini56/Kaloneo/releases?per_page=30' | ConvertFrom-Json)
