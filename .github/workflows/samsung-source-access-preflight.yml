@@ -1,0 +1,26 @@
+name: "KALONEO-MAJ - vérifier lecture du dépôt KALONEO privé"
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/samsung-source-access-preflight.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  verifier-acces:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: "Vérifier la lecture de la Release officielle privée (sans téléchargement)"
+        env:
+          GH_TOKEN: ${{ secrets.KALONEO_SOURCE_READ_TOKEN }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [[ -z "${GH_TOKEN:-}" ]]; then echo '::error::KALONEO_SOURCE_READ_TOKEN absent dans Kaloneo-MAJ'; exit 30; fi
+          tag="$(gh api repos/mini56/Kaloneo/releases/tags/kaloneo-1.00.209 --jq .tag_name)"
+          if [[ "$tag" != "kaloneo-1.00.209" ]]; then echo '::error::Lecture du dépôt privé refusée'; exit 31; fi
+          echo 'PRIVATE_KALONEO_RELEASE_READ=SUCCESS'
+          echo 'NO_BINARIES_DOWNLOADED=YES'
+          echo 'NO_RELEASE_PUBLISHED=YES'
