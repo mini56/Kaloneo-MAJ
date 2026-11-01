@@ -1,0 +1,80 @@
+name: "TEST - Samsung KALONEO - verifier et publier la Release d'essai"
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: kaloneo-samsung-release-test-20261101
+  cancel-in-progress: false
+
+jobs:
+  publier-test-controle:
+    name: "Publier le test Samsung (EXE + SHA256 verifies)"
+    runs-on: windows-latest
+    timeout-minutes: 35
+    steps:
+      - name: "Récupérer le Setup compilé sur le Samsung depuis le dépôt privé"
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ secrets.KALONEO_SOURCE_READ_TOKEN }}
+        run: |
+          $ErrorActionPreference = 'Stop'
+          if([string]::IsNullOrWhiteSpace($env:GH_TOKEN)){throw 'KALONEO_SOURCE_READ_TOKEN absent : publication REFUSEE'}
+          $tag='runner-samsung-validation-20261101'
+          $exe='KALONEO-Setup-1.00.209.exe'
+          $sha=$exe+'.sha256'
+          $sourceRaw=gh api "repos/mini56/Kaloneo/releases/tags/$tag"
+          if($LASTEXITCODE -ne 0){throw 'Release temporaire du Samsung absente du dépôt privé'}
+          $source=$sourceRaw | ConvertFrom-Json
+          if($source.tag_name -ne $tag -or $source.prerelease -ne $true){throw 'Source de test inattendue'}
+          $assetExe=@($source.assets | Where-Object {$_.name -eq $exe} | Select-Object -First 1)
+          $assetSha=@($source.assets | Where-Object {$_.name -eq $sha} | Select-Object -First 1)
+          if($assetExe.Count -ne 1 -or $assetSha.Count -ne 1 -or @($source.assets).Count -ne 2){throw 'EXE + SHA256 obligatoires, aucun autre fichier'}
+          if($assetExe[0].size -lt 100MB -or $assetExe[0].digest -notmatch '^sha256:[A-Fa-f0-9]{64}$'){throw 'Fichier source invalide'}
+          New-Item -ItemType Directory -Path dist -Force | Out-Null
+          gh release download $tag --repo mini56/Kaloneo --pattern $exe --dir dist --clobber
+          if($LASTEXITCODE -ne 0){throw 'Téléchargement EXE depuis Samsung impossible'}
+          gh release download $tag --repo mini56/Kaloneo --pattern $sha --dir dist --clobber
+          if($LASTEXITCODE -ne 0){throw 'Téléchargement SHA depuis Samsung impossible'}
+          $setup=Get-Item (Join-Path dist $exe) -ErrorAction Stop
+          $local=(Get-FileHash -LiteralPath $setup.FullName -Algorithm SHA256).Hash.ToUpperInvariant()
+          $expected=$assetExe[0].digest.Substring(7).ToUpperInvariant()
+          $hashFile=([regex]::Match((Get-Content (Join-Path dist $sha) -Raw),'^[a-fA-F0-9]{64}')).Value.ToUpperInvariant()
+          if($setup.Length -ne $assetExe[0].size -or $local -ne $expected -or $local -ne $hashFile){throw 'SHA256 incorrect : PUBLICATION BLOQUEE'}
+          Write-Output ('SAMSUNG_SOURCE_TAG='+$tag)
+          Write-Output ('SAMSUNG_SOURCE_EXE_SHA256='+$local)
+          Write-Output 'VALIDATION_SOURCE=SUCCESS'
+      - name: "Publier une Release d'essai non-officielle sur Kaloneo-MAJ"
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $tag='runner-samsung-validation-20261101'
+          $existing=gh release view $tag --repo mini56/Kaloneo-MAJ --json tagName 2>$null
+          if($LASTEXITCODE -eq 0){throw 'Release test deja publiee : aucun remplacement automatique'}
+          $exe='dist/KALONEO-Setup-1.00.209.exe'
+          $sha=$exe+'.sha256'
+          $text=@'
+          ESSAI TECHNIQUE DE PUBLICATION - NE PAS INSTALLER.
+
+          Ce Setup KALONÉO 1.00.209 a ete reconstruit sur le PC Samsung KALONEO-RUNNERS,
+          avec les secrets officiels d'installation (jamais affiches).
+          Le Setup et son SHA256 ont ete verifies avant publication sur Kaloneo-MAJ.
+          Le tag de cette Release d'essai n'est PAS un numero de version.
+          La version officielle 1.00.209 n'est PAS remplacee.
+          Ceci n'est PAS une mise a jour destinee aux utilisateurs.
+          '@
+          gh release create $tag $exe $sha --repo mini56/Kaloneo-MAJ --target main --title 'TEST SAMSUNG — KALONÉO 1.00.209 — NE PAS INSTALLER' --notes $text --prerelease
+          if($LASTEXITCODE -ne 0){throw 'GitHub a refuse la Release sur Kaloneo-MAJ'}
+          $published=gh api "repos/mini56/Kaloneo-MAJ/releases/tags/$tag" | ConvertFrom-Json
+          if($LASTEXITCODE -ne 0){throw 'Release publique introuvable apres creation'}
+          $assets=@($published.assets)
+          $asset=@($assets | Where-Object {$_.name -eq 'KALONEO-Setup-1.00.209.exe'} | Select-Object -First 1)
+          if($assets.Count -ne 2 -or $asset.Count -ne 1 -or $asset[0].size -lt 100MB){throw 'Release test incomplete'}
+          $actual=(Get-FileHash -LiteralPath $exe -Algorithm SHA256).Hash.ToLowerInvariant()
+          if($asset[0].digest -ne ('sha256:'+$actual)){throw 'Empreinte distante differente : VERIFICATION BLOQUEE'}
+          Write-Output ('SAMSUNG_MAJ_TEST_RELEASE='+$published.html_url)
+          Write-Output 'SAMSUNG_TO_KALONEO_MAJ=SUCCESS'
