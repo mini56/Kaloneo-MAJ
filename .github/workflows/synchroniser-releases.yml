@@ -98,9 +98,9 @@ jobs:
 
           Fichiers distribues : uniquement l'installateur Windows EXE et son SHA256.
           Les archives « Source code (zip/tar.gz) » sont ajoutees par GitHub et contiennent uniquement le depot MAJ minimal.
-          KALONÉO reste utilisable hors connexion. Aucun fichier candidat n'est publié ici.
+          KALONÉO reste utilisable hors connexion.
           "@
-          gh release create $env:RELEASE_TAG ("dist/"+$env:RELEASE_EXE) ("dist/"+$env:RELEASE_SHA) --repo mini56/Kaloneo-MAJ --target main --title "KALONÉO $($env:RELEASE_TAG.Substring(8)) — Mise à jour Windows" --notes $notes --prerelease
+          gh release create $env:RELEASE_TAG ("dist/"+$env:RELEASE_EXE) ("dist/"+$env:RELEASE_SHA) --repo mini56/Kaloneo-MAJ --target main --title "KALONÉO $($env:RELEASE_TAG.Substring(8)) — Mise à jour Windows" --notes $notes
           if($LASTEXITCODE -ne 0){throw 'Publication du miroir KALONÉO impossible'}
           $published = gh api "repos/mini56/Kaloneo-MAJ/releases/tags/$env:RELEASE_TAG" | ConvertFrom-Json
           if($LASTEXITCODE -ne 0){throw 'Release miroir illisible'}
